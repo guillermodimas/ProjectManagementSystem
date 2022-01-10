@@ -1,0 +1,167 @@
+﻿@inject IAuthorizeApi _authorizeAPI
+<Modal @ref="modalRef">
+    @if(ticket != null)
+    {
+         <ModalContent Centered="true">
+             <Validations @ref="validationsTicketModel" Mode="ValidationMode.Manual" Model="ticket">
+        <ModalHeader>
+            <ModalTitle Style="white-space: nowrap;">Ticket Title:
+                            </ModalTitle>
+                            <Validation>
+                                <TextEdit @bind-Text="ticket.Title" Margin="Margin.Is2.FromLeft" Placeholder="Ticket Title" Width="Width.Is100">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Validation>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody>
+            
+                 <div class="row">
+                    <div class="col-sm-12">
+                          <Field>                  
+                            <FieldLabel Style="margin-right:5px">Ticket Description</FieldLabel>
+                                <Validation>
+                                <TextEdit @bind-Text="ticket.Description" Margin="Margin.Is2.FromBottom" Placeholder="Description">
+                                    <Feedback>
+                                        <ValidationError />
+                                    </Feedback>
+                                </TextEdit>
+                            </Validation>
+                </Field>
+                    </div>
+                </div>
+                 <div class="row">
+                    <div class="col-sm-12">
+                          <Field>                  
+                            <FieldLabel Style="margin-right:5px">Assigned User</FieldLabel>
+                                <Validation>
+                                 <Select Margin="Margin.Is2.FromBottom" TValue="Guid" @bind-SelectedValue="@ticket.AssignedUserID">
+                                            <ChildContent>
+                                                    <SelectItem Value="Guid.Empty">Not Assigned</SelectItem>
+                                                    @if(ticketProject != null)
+                                            {
+                                                @foreach(var user in ticketProject.ProjectAssignedUser)
+                                                    {
+                                                        <SelectItem Value="@(new Guid(user.Id))">@user.FirstName  @user.LastName</SelectItem>
+                                                    }
+                                            }
+                                            
+                                            </ChildContent>
+                                            <Feedback>
+                                                <ValidationError />
+                                            </Feedback>
+                                        </Select>
+                            </Validation>
+                </Field>
+                    </div>
+                </div>
+
+           
+           
+           
+        </ModalBody>
+        
+        <ModalFooter Style="display:block">
+                <div class="row" style="flex-wrap:nowrap">
+                    <div class="col-sm-6">
+                        <Button Color="Color.Danger" Clicked="@DeleteTicket">Delete Ticket</Button>
+                    </div>
+                    <div class="col-sm-6 float-right">
+                        <div class="float-right">
+                         <Button Color="Color.Secondary" Clicked="@HideModal">Close</Button>
+                         <Button Color="Color.Primary" Clicked="SaveTicket">Save</Button>
+                        </div>
+                    </div>
+                </div>
+           
+        </ModalFooter>
+         </Validations>
+    </ModalContent>
+    }
+</Modal>
+
+
+
+
+@code
+{
+    private TicketModel ticket { get; set; }
+
+    [Parameter] 
+    public EventCallback<TicketModel> OnTicketUpdated { get; set; }
+
+
+    Validations validationsTicketModel; 
+    private ProjectModel ticketProject { get; set; }
+    // reference to the modal component
+    private Modal modalRef;
+
+    public async Task ShowModal(TicketModel selectedTicket)
+    {
+
+        ticket = selectedTicket;
+
+        //Load Project info (used to populate list of users to assign ticket to)
+        var projects = await _authorizeAPI.GetAllProjects();
+        ticketProject = projects.Where(x => x.ProjectID == ticket.AssignedProjectID).FirstOrDefault();
+
+        await modalRef.Show();
+    }
+    public Task HideModal()
+    {
+        ticket = null;
+        return modalRef.Hide();
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        var test = modalRef;
+    }
+    public async Task DeleteTicket()
+    {
+        await _authorizeAPI.DeleteTicket(ticket);
+        
+        await OnTicketUpdated.InvokeAsync(ticket);
+       
+        ticket = null;
+        await modalRef.Hide();
+    }
+    public async Task SaveTicket()
+    {
+
+
+
+
+        if(ticket.TicketID == null)
+        {
+            if(ticket.AssignedUserID != Guid.Empty)
+            {
+                ticket.Status = TicketStatuses.Todo;
+            }
+            else
+            {
+                ticket.Status = TicketStatuses.Unassigned;
+            }
+            await _authorizeAPI.AddTicket(ticket);
+        }
+        else
+        {
+            if(ticket.AssignedUserID == Guid.Empty)
+            {
+                ticket.Status = TicketStatuses.Unassigned;
+            }
+            else
+            {
+                ticket.Status = TicketStatuses.Todo;
+            }
+            await _authorizeAPI.EditTicket(ticket);
+        }
+
+        await OnTicketUpdated.InvokeAsync(ticket);
+       
+        ticket = null;
+        await modalRef.Hide();
+        
+    }
+}

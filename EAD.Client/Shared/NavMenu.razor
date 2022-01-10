@@ -1,0 +1,36 @@
+﻿<nav class="navbar navbar-expand-md navbar-light bg-white">
+    <div class="container-fluid">
+        <a class="navbar-brand" href="/">
+            <img src="/Images/microsoft-azure-3-logo-svgrepo-com.svg" style="margin-right:10px !important" height="60" alt="">Project Management System
+        </a>
+        <button class="navbar-toggler" type="button" data-toggle="collapse" data-target="#navbarResponsive" aria-controls="navbarResponsive" aria-expanded="false" aria-label="Toggle navigation">
+            <span class="navbar-toggler-icon"></span>
+        </button>
+        <div class="collapse navbar-collapse" id="navbarResponsive">
+            <ul class="navbar-nav ml-auto">
+
+                <li class="nav-item">
+                    <NavLink class="nav-link" href="/companies" Match="NavLinkMatch.All">
+                        Companies
+                    </NavLink>
+                </li>
+                 <li class="nav-item">
+                    <NavLink class="nav-link" href="/projects" Match="NavLinkMatch.All">
+                        Projects
+                    </NavLink>
+                </li>
+             
+
+
+                <li class="nav-item">
+                    <LoginDisplay />
+                </li>
+            </ul>
+        </div>
+    </div>
+</nav>
+
+@code {
+
+
+}

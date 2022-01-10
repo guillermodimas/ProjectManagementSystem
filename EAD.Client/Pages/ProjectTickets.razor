@@ -1,0 +1,143 @@
+﻿@page "/Tickets/{ProjectID:int}"
+@attribute [Authorize]
+@inject IAuthorizeApi _authorizeAPI
+
+@if(selectedProject != null)
+{
+    <div class="row">
+         <div class="container mb-5">
+               <div class="row justify-content-between">
+        <div class="col-sm-6">
+          <Heading Size="HeadingSize.Is4"> Project: @selectedProject.ProjectTitle</Heading>
+        </div>
+        <div class="col-sm-6">
+            <div class="float-right">
+                <Button Color="Color.Success" Clicked="@(() => ticketModal.ShowModal( new TicketModel{ AssignedProjectID = selectedProject.ProjectID } ) )">Add New Ticket</Button>
+            </div>
+          
+        </div>
+         </div>
+        </div>
+    </div>
+       
+ 
+  
+
+    
+          
+  
+    <Card>
+      
+             <CardBody>
+    
+    <CardText>
+
+        @if(Tickets != null)
+                {
+                     <TicketModal @ref="ticketModal" OnTicketUpdated="HandleTicketUpdated" ></TicketModal>
+
+                    <TicketsContainer Tickets="Tickets" OnStatusUpdated="HandleStatusUpdated">
+        <TicketList ListStatus="TicketStatuses.Unassigned" AllowedStatuses="@(new TicketStatuses[] { TicketStatuses.Unassigned})" />
+        <TicketList ListStatus="TicketStatuses.Todo" AllowedStatuses="@(new TicketStatuses[] { TicketStatuses.Started, TicketStatuses.Completed})" />
+        <TicketList ListStatus="TicketStatuses.Started" AllowedStatuses="@(new TicketStatuses[] { TicketStatuses.Todo, TicketStatuses.Completed})" />
+        <TicketList ListStatus="TicketStatuses.Completed" AllowedStatuses="@(new TicketStatuses[] { TicketStatuses.Started })" />
+        </TicketsContainer>
+
+        <hr />
+        <p>Last updated ticket was: <strong>@lastUpdatedTicket</strong></p>
+        <hr />
+
+
+        @foreach (var ticket in Tickets)
+        {
+            <p>@ticket.Title - <strong>@ticket.Status</strong></p>
+        }
+
+                    
+                }
+                else
+                {
+                     <p>Loading Tickets...</p>
+                }
+
+    </CardText>
+</CardBody>
+        
+    </Card>
+  
+
+}
+else
+{
+     <p>Loading Project...</p>
+}
+
+
+@code
+{
+    [Parameter]
+    public int ProjectID { get; set; }
+
+    private ProjectModel selectedProject { get; set; } = new ProjectModel();
+
+    protected override async Task OnInitializedAsync()
+    {
+        //load projects
+        var allProjects = await _authorizeAPI.GetAllProjects();
+
+        // select only the project indicated by the route parameter
+        selectedProject = allProjects.Where(x => x.ProjectID == ProjectID).FirstOrDefault();
+
+
+        Tickets = await _authorizeAPI.GetAllTickets();
+        Tickets = Tickets.Where(x => x.AssignedProjectID == ProjectID).ToList(); //only return selected project tickets
+
+
+        //Load Sample Tickets
+        //Tickets.Add(new TicketModel { Id = 1, Description = "Gather Requirements with stakeholders", Status = TicketStatuses.Todo, LastUpdated = DateTime.Now, AssignedProjectID = 1 });
+        //Tickets.Add(new TicketModel { Id = 2, Description = "Document existing technical specfications", Status = TicketStatuses.Todo, LastUpdated = DateTime.Now, AssignedProjectID = 2 });
+        //Tickets.Add(new TicketModel { Id = 3, Description = "Design updated schema", Status = TicketStatuses.Todo, LastUpdated = DateTime.Now, AssignedProjectID = 3 });
+        //Tickets.Add(new TicketModel { Id = 4, Description = "Create DB", Status = TicketStatuses.Todo, LastUpdated = DateTime.Now, AssignedProjectID = 4 });
+        //Tickets.Add(new TicketModel { Id = 5, Description = "Implement bug fixes, testing", Status = TicketStatuses.Unassigned, LastUpdated = DateTime.Now, AssignedProjectID = 5 });
+
+    }
+
+
+    //Tickets Logic
+    List<TicketModel> Tickets { get; set; }
+    string lastUpdatedTicket = "";
+    async Task HandleStatusUpdated(TicketModel ticket)
+    {
+        lastUpdatedTicket = ticket.Title;
+
+
+
+      
+
+              //await _authorizeAPI.EditTicket(ticket);
+              await RefreshTickets();
+   
+     
+    }
+    async Task HandleTicketUpdated(TicketModel ticket)
+    {
+        if(ticket != null)
+        {
+
+            await RefreshTickets();
+        }
+    }
+
+
+    async Task RefreshTickets()
+    {
+            Tickets =  await _authorizeAPI.GetAllTickets();
+            if(Tickets != null)
+            {
+                Tickets = Tickets.Where(x => x.AssignedProjectID == ProjectID).ToList(); //only return selected project tickets
+            }   
+    }
+
+    //ticket modal logic
+    TicketModal ticketModal = new TicketModal();
+}

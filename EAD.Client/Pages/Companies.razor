@@ -1,0 +1,242 @@
+﻿@page "/Companies"
+@attribute [Authorize]
+@inject IAuthorizeApi _authorizeAPI
+
+@if (companies != null)
+{
+    <div class="row">
+        <div class="col-sm-4">
+            <DataGrid TItem="CompanyModel"
+                  Data="@companies"
+                  
+                  Editable
+                  Responsive
+                  ShowPager
+                  PageSize="10"
+                  CommandMode="DataGridCommandMode.ButtonRow"
+                  SelectedRowChanged="SelectedRowChanged"
+                  UseValidation 
+                  RowInserted="OnRowInserted"
+                  RowRemoved="RowRemoved">
+                <DataGridColumns>
+                    <DataGridCommandColumn TItem="CompanyModel">
+
+                        <DeleteCommandTemplate></DeleteCommandTemplate>
+                    </DataGridCommandColumn>
+                    <DataGridColumn TItem="CompanyModel" Field="@nameof(CompanyModel.CompanyID)" Caption="ID" Sortable="false" />
+                    <DataGridColumn TItem="CompanyModel" Field="@nameof(CompanyModel.CompanyName)" Caption="Company Name" Editable="true" />
+                </DataGridColumns>
+                <ButtonRowTemplate>
+                    <Button Color="Color.Success" Clicked="context.NewCommand.Clicked">New</Button>
+                    <Button Color="Color.Danger" Disabled="(selectedCompany is null)" Clicked="context.DeleteCommand.Clicked">Delete</Button>
+                </ButtonRowTemplate>
+                <EmptyTemplate>
+                    <div class="box">
+                        No companies found.
+                    </div>
+                </EmptyTemplate>
+            </DataGrid>     
+        </div>
+        @if (selectedCompany != null)
+        {
+            <div class="col-sm-8">
+                <Card>
+
+                    <CardBody>
+                        <CardTitle Size="5">@selectedCompany.CompanyName</CardTitle>
+                        <CardText>
+                            <div class="row">
+                                <div class="col-sm-12">
+                                     @selectedCompany.CompanyID - @selectedCompany.CompanyName
+                                </div>
+                            </div>
+                            <Divider />
+                            <div class="row">
+                                <div class="col-sm-12">
+                                    <Field>
+                                        
+                                        <FieldLabel Style="margin-right:5px">Company Users</FieldLabel> <Button Color="Color.Link" Clicked=@(() => toogleAddEditUsers = !toogleAddEditUsers )>Add/Edit Users</Button>
+                                        <div class="row">
+                                            <div class="col-sm-12">
+                                                 @if(selectedCompany.CompanyUserID != null)
+                                        {
+                                         @foreach(var user in selectedCompany.CompanyUserID)
+                                            {
+                                                 allUsers.Remove(user);
+                                                <Badge Color="Color.Secondary" CloseClicked="@(()=> RemoveUserAssignment(selectedCompany, user) )" Margin="Blazorise.Margin.Is1" cli>@user.FirstName</Badge>
+                                                    
+                                                    if(!selectedCompany.CompanyUserID.Any())
+                                                    {
+                                                        <p class="text small ml-2">No Users Added</p>
+                                                    }
+
+                                                   
+                                                }
+                                           }
+                                        else
+                                        {
+                                            <p class="text small ml-2">No Users Added</p>
+                                        }
+                                            </div>
+                                        </div>
+                                    </Field>
+                                        @if(toogleAddEditUsers)
+                                        {
+                                            <Addons>
+                                                <Addon AddonType="AddonType.Body">
+                                                    <Select TValue="string" SelectedValue="@selectedUserToAdd" SelectedValueChanged="@OnSelectedValueChanged">
+                                                    <SelectItem Value="@(string.Empty)">Select User</SelectItem>
+                                                    @foreach(var user in allUsers)
+                                                    {
+                                                        <SelectItem Value="@(user.Id)">@user.FirstName  @user.LastName</SelectItem>
+                                                    }
+                                                    </Select>
+                                                </Addon>
+                                                <Addon AddonType="AddonType.End">
+                                                    <Button Color="Color.Secondary" Clicked="@(()=> AssignUser(selectedCompany))" Disabled=@(allUsers.Count() < 1 ? true : false)>Assign User</Button>
+                                                </Addon>
+                                            </Addons>
+                                        }
+                                             
+                                </div>
+                                
+                            </div>
+                           <Divider />
+                           <div class="row">
+                               <div class="col-sm-12">
+                                   <Field>
+                                        
+                                        <FieldLabel Style="margin-right:5px">Projects Assigned</FieldLabel> <Button Color="Color.Link">Assign New Project</Button>
+                                       <p class="text small ml-2">*** PENDING Projects Module ***</p>
+                                    </Field>
+                               </div>
+                           </div>
+
+                         
+                        </CardText>
+                       
+                    </CardBody>
+                </Card>
+            </div>
+        }
+
+    </div>
+
+}
+else
+{
+    <p>Loading Companies...</p>
+}
+
+
+@code
+{
+    private List<CompanyModel> companies { get; set; }
+    private CompanyModel selectedCompany;
+    private List<UserInfo> allUsers { get; set; }
+    private bool toogleAddEditUsers { get; set; } = false;
+    private string selectedUserToAdd { get; set; } 
+    protected override async Task OnInitializedAsync()
+    {
+        companies = await _authorizeAPI.GetAllCompanies();
+
+        //load all system users
+        allUsers = await _authorizeAPI.GetAllUsers();
+
+        ////load list of all companies
+        //companies = new List<CompanyModel>
+        //{
+        //    new CompanyModel { CompanyID = 1, CompanyName = "Microsoft", CompanyUserID = new List<UserInfo>(allUsers.Take(2).ToList() ) },
+        //    new CompanyModel { CompanyID = 2, CompanyName = "Apple", CompanyUserID = null },
+        //    new CompanyModel { CompanyID = 3, CompanyName = "Amazon", CompanyUserID = null },
+        //    new CompanyModel { CompanyID = 4, CompanyName = "Walmart", CompanyUserID = null }
+        //};
+
+
+
+
+    }
+    void RemoveUserAssignment(CompanyModel company, UserInfo user)
+    {
+        var selectedCompany = companies.Where(c => c == company).ToList();
+        selectedCompany.ForEach(c => c.CompanyUserID.Remove(user));
+
+        allUsers.Add(user);
+
+        //Delete Company User FROM DB
+        _authorizeAPI.DeleteCompanyUser(company, user);
+    }
+
+    void AssignUser(CompanyModel company)
+    {
+        var selectedCompany = companies.Where(c => c == company).ToList();
+
+        UserInfo selectedUser = allUsers.Where(x => x.Id == selectedUserToAdd).First();
+
+        if(selectedCompany.First().CompanyUserID == null)
+        {
+            selectedCompany.First().CompanyUserID = new List<UserInfo>() { selectedUser };
+
+        }
+        else
+        {
+            selectedCompany.ForEach(c => c.CompanyUserID.Add(selectedUser));    
+        }
+        allUsers.Remove(selectedUser);
+
+
+        //Add Company User to DB
+        _authorizeAPI.AddCompanyUser(selectedCompany.First(), selectedUser);
+
+
+        selectedUserToAdd = string.Empty;
+    }
+
+    void OnSelectedValueChanged(string userID )
+    {
+        selectedUserToAdd = userID;
+    }
+
+    private async Task SelectedRowChanged(CompanyModel args)
+    {
+        selectedCompany = args;
+        toogleAddEditUsers = false;
+        allUsers = await _authorizeAPI.GetAllUsers();
+
+        if(allUsers != null)
+        {
+            if(selectedCompany.CompanyUserID != null)
+            {
+                foreach(var user in selectedCompany.CompanyUserID)
+                {
+                    UserInfo selectedUser = allUsers.Where(x => x.Id == user.Id).First();
+                    allUsers.Remove(selectedUser);
+                }
+            }
+        }
+    }
+
+    private async Task OnRowInserted(SavedRowItem<CompanyModel, Dictionary<string, object>> e)
+    {
+        var newCompany = new CompanyModel() { CompanyName = (string)e.Values["CompanyName"]  };
+
+        //Add Company To DB
+        await _authorizeAPI.AddCompany(newCompany);
+
+
+        companies = await _authorizeAPI.GetAllCompanies();
+
+        selectedCompany = companies.Where(x => x.CompanyName == newCompany.CompanyName).First();
+
+    }
+
+    private async Task RowRemoved(CompanyModel company)
+    {
+        //Delete Company from DB
+        await _authorizeAPI.DeleteCompany(company);
+
+        //reset selected company
+        selectedCompany = null;
+    }
+
+}

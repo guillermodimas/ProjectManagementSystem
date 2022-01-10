@@ -1,0 +1,46 @@
+﻿@inject IAuthorizeApi _authorizeAPI
+
+<Heading Size="HeadingSize.Is5">Ticket Board</Heading>
+
+<div class="Tickets-container">
+    <CascadingValue Value="this">
+        @ChildContent
+    </CascadingValue>
+</div>
+
+
+
+
+
+@code {
+    [Parameter] public List<TicketModel> Tickets { get; set; }
+    [Parameter] public RenderFragment ChildContent { get; set; }
+    [Parameter] public EventCallback<TicketModel> OnStatusUpdated { get; set; }
+
+    public TicketModel Payload { get; set; }
+
+    public async Task UpdateJobAsync(TicketStatuses newStatus)
+    {
+        var task = Tickets.SingleOrDefault(x => x.TicketID == Payload.TicketID);
+
+        if (task != null)
+        {
+            task.Status = newStatus;
+            task.LastUpdated = DateTime.Now;
+
+            if(task.Status == TicketStatuses.Unassigned && task.AssignedUserID != Guid.Empty)
+            {
+
+            }
+            else
+            {
+                await _authorizeAPI.EditTicket(task);
+            }
+            
+            await OnStatusUpdated.InvokeAsync(Payload);
+        }
+    }
+
+    
+
+}

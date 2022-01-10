@@ -1,0 +1,70 @@
+﻿@page "/register"
+@*@layout LoginLayout*@
+@inject NavigationManager navigationManager
+@inject IdentityAuthenticationStateProvider authStateProvider
+
+<PageTitle>Register</PageTitle>
+
+<div class="row">
+    <div class="col-sm-4">
+
+    </div>
+    <div class="col-sm-4">
+        <EditForm class="form-signin" OnValidSubmit="OnSubmit" Model="registerParameters">
+    <DataAnnotationsValidator />
+    <h4 class="font-weight-normal text-center">Create Account</h4>
+
+    <label for="inputUsername" class="sr-only">Email</label>
+    <InputText id="inputUsername" class="form-control" placeholder="Email" autofocus @bind-Value="@registerParameters.EmailAddress" />
+    <ValidationMessage For="@(() => registerParameters.EmailAddress)" />
+
+    <label for="inputFirstName" class="sr-only">First Name</label>
+    <InputText id="inputFirstName" class="form-control" placeholder="First Name" autofocus @bind-Value="@registerParameters.FirstName" />
+    <ValidationMessage For="@(() => registerParameters.FirstName)" />
+
+    <label for="inputLastName" class="sr-only">Last Name</label>
+    <InputText id="inputLastName" class="form-control" placeholder="Last Name" autofocus @bind-Value="@registerParameters.LastName" />
+    <ValidationMessage For="@(() => registerParameters.LastName)" />
+
+    <label for="inputPassword" class="sr-only">Password</label>
+    <InputText type="password" id="inputPassword" class="form-control" placeholder="Password" @bind-Value="@registerParameters.Password" />
+    <ValidationMessage For="@(() => registerParameters.Password)" />
+
+    <label for="inputPasswordConfirm" class="sr-only">Password Confirmation</label>
+    <InputText type="password" id="inputPasswordConfirm" class="form-control" placeholder="Password Confirmation" @bind-Value="@registerParameters.PasswordConfirm" />
+    <ValidationMessage For="@(() => registerParameters.PasswordConfirm)" />
+
+    <button class="btn btn-lg btn-primary btn-block" type="submit">Create account</button>
+
+    <label class="text-danger">@error</label>
+    <NavLink href="login">
+        <h6 class="font-weight-normal text-center">Already have an account? Click here to login</h6>
+    </NavLink>
+</EditForm>
+    </div>
+    <div class="col-sm-4">
+
+    </div>
+</div>
+
+
+
+@functions{
+
+    RegisterParameters registerParameters { get; set; } = new RegisterParameters();
+    string error { get; set; }
+
+    async Task OnSubmit()
+    {
+        error = null;
+        try
+        {
+            await authStateProvider.Register(registerParameters);
+            navigationManager.NavigateTo("");
+        }
+        catch (Exception ex)
+        {
+            error = ex.Message;
+        }
+    }
+}

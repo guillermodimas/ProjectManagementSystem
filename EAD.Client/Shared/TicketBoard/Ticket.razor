@@ -1,0 +1,50 @@
+﻿<li class="@(TicketModel.Status == TicketStatuses.Unassigned ? "NotDraggable" : "draggable")" draggable="@(TicketModel.Status == TicketStatuses.Unassigned ? "false" : "true")" title="@TicketModel.Description" @ondragstart="@(() => HandleDragStart(TicketModel))">
+    <p class="description">@TicketModel.Title</p>
+    <p class="last-updated"><small>Last Updated</small> @TicketModel.LastUpdated.ToString("HH:mm tt")</p>
+    <a href="" style="color:#ffffff !important" @onclick="@(() => showEditTicketModal(TicketModel))" @onclick:preventDefault>Edit Ticket</a>
+    @*<Button Color="Color.Link" Size="Size.Small" Clicked="@(() => showEditTicketModal(TicketModel))">Edit Ticket</Button>*@
+</li>
+
+
+@if(TicketModel != null)
+{
+    <TicketModal @ref="ticketModal" OnTicketUpdated="HandleTicketUpdated"></TicketModal>    
+}
+
+
+
+@code {
+    [CascadingParameter] TicketsContainer Container { get; set; }
+    [Parameter] public TicketModel TicketModel { get; set; }
+    [Parameter] public TicketStatuses ListStatus { get; set; }
+
+
+
+    TicketModal ticketModal = new TicketModal();
+    private void HandleDragStart(TicketModel selectedTicket)
+    {
+        Container.Payload = selectedTicket;
+    }
+
+    async Task clicked (TicketModel selectedTicket)
+    {
+
+        selectedTicket.Description = "UPDATED";
+        Container.Payload = selectedTicket;
+        await Container.UpdateJobAsync(ListStatus);
+    }
+
+    void showEditTicketModal(TicketModel selectedTicket)
+    {
+        ticketModal.ShowModal(selectedTicket);
+    }
+
+    async Task HandleTicketUpdated(TicketModel ticket)
+    {
+        if(ticket != null)
+        {
+            Container.Payload = ticket;
+           await Container.UpdateJobAsync(ListStatus);
+        }
+    }
+}

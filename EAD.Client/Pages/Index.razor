@@ -1,0 +1,19 @@
+﻿@page "/"
+@attribute [Authorize]
+
+<PageTitle>Index</PageTitle>
+
+<AuthorizeView>
+    <Authorized>
+      
+
+        <p>Welcome to your new app.</p>
+
+      
+    </Authorized>
+    <Authorizing>
+        <h1>Loading ...</h1>
+    </Authorizing>
+</AuthorizeView>
+
+

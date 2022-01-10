@@ -1,0 +1,457 @@
+﻿@page "/Projects"
+@attribute [Authorize]
+@inject IAuthorizeApi _authorizeAPI
+@inject NavigationManager navManager
+
+@if(availableProjects != null)
+{
+    <CardBody>
+        <CardTitle Size="5">Available Projects</CardTitle>
+        <CardText>
+               <DataGrid TItem="ProjectModel"
+                  Data="@availableProjects"
+                  SelectedRowChanged="SelectedRowChanged"
+                  Editable
+                  Responsive
+                  ShowPager
+                  PageSize="10"
+                  RowInserted="OnRowInserted"
+                  RowUpdated="OnRowUpdated"
+                  RowRemoved="RowRemoved"
+                  UseValidation >
+                <DataGridColumns>
+                    <DataGridCommandColumn TItem="ProjectModel">
+
+                    </DataGridCommandColumn>
+                    <DataGridColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectID)" Caption="ID" Sortable="false" />
+                    <DataGridColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectTitle)" Caption="Title" Editable="true" />
+                    <DataGridColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectOverview)" Caption="Overview" Editable="true" />
+                    <DataGridDateColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectDueDate)" Caption="Due Date" Sortable="true" Editable="true" Width="120px">
+                <DisplayTemplate>
+
+                    @($"{(context as ProjectModel).ProjectDueDate.ToShortDateString()}")
+
+                </DisplayTemplate>
+                <EditTemplate>
+
+                    @if ((DateTime)(((CellEditContext)context).CellValue) == DateTime.MinValue)
+                    {
+
+                     
+                            <DateEdit TValue="DateTime" Date="DateTime.Now" Min="DateTime.Now" DateChanged="@(v => ((CellEditContext)context).CellValue = v)"></DateEdit>
+                           
+                    }
+                    else
+                    {
+                       
+                        <DateEdit TValue="DateTime" Min="DateTime.Now" Date="@((DateTime)(((CellEditContext)context).CellValue))" DateChanged="@(v => ((CellEditContext)context).CellValue = v)" />
+                           
+                    }
+
+
+                </EditTemplate>
+
+            </DataGridDateColumn>
+               <DataGridSelectColumn TItem="ProjectModel" Field="@nameof(ProjectModel.AssignedCompanyID)" Caption="Company Assigned" Editable="true" CellsEditableOnNewCommand="true" CellsEditableOnEditCommand="true" Width="220px">
+                <EditTemplate>
+                    <Select TValue="int?" SelectedValue="@((int?)(((CellEditContext)context ).CellValue))" SelectedValueChanged="@((v) => ((CellEditContext)context).CellValue = v)">
+                        <ChildContent>
+                            if(companies != null)
+                            {
+                                <SelectItem Value="(int?)null">Not Assigned</SelectItem>
+                                @foreach (var comp in companies)
+                                {
+                                    <SelectItem Value="comp.CompanyID">@comp.CompanyName</SelectItem>
+                                }
+                            }
+
+                        </ChildContent>
+
+                    </Select>
+                </EditTemplate>
+                    <DisplayTemplate>
+                    @{
+                        var companyID = (context as ProjectModel).AssignedCompanyID;
+                        if (companies != null)
+                        {
+                            var companyRecord = companies.Where(x => x.CompanyID == companyID).FirstOrDefault();
+                            if(companyRecord != null )
+                            {
+                                @($"{companyRecord.CompanyName}")
+                            }
+                            else
+                            {
+                                @($"Not Assigned")
+                            }
+                        }
+                    }
+                </DisplayTemplate>
+            </DataGridSelectColumn>
+            
+                </DataGridColumns>
+                <EmptyTemplate>
+                    <div class="box">
+                        No Available Projects.
+                    </div>
+                </EmptyTemplate>
+            </DataGrid>  
+        </CardText>
+    </CardBody>
+ 
+}
+else
+{
+    <p>Loading available Projects...</p>
+}
+
+@if(assignedProjects != null)
+{
+     <CardBody>
+        <CardTitle Size="5">Active Projects</CardTitle>
+        <CardText>
+               <DataGrid TItem="ProjectModel"
+                  Data="@assignedProjects"
+                  SelectedRowChanged="SelectedRowChanged"
+                  Editable
+                  Responsive
+                  ShowPager
+                  PageSize="10"
+                  RowInserted="OnRowInserted"
+                  RowUpdated="OnRowUpdated"
+                  RowRemoved="RowRemoved"
+                  UseValidation >
+                <DataGridColumns>
+                    <DataGridCommandColumn TItem="ProjectModel">
+
+                        
+                    </DataGridCommandColumn>
+                    <DataGridColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectID)" Caption="ID" Sortable="false" Editable="false" />
+                    <DataGridColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectTitle)" Caption="Title" Editable="true" />
+                    <DataGridColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectOverview)" Caption="Overview" Editable="true" />
+                    <DataGridDateColumn TItem="ProjectModel" Field="@nameof(ProjectModel.ProjectDueDate)" Caption="Due Date" Sortable="true" Editable="true" Width="120px">
+                <DisplayTemplate>
+
+                    @($"{(context as ProjectModel).ProjectDueDate.ToShortDateString()}")
+
+                </DisplayTemplate>
+                <EditTemplate>
+
+                    @if ((DateTime)(((CellEditContext)context).CellValue) == DateTime.MinValue)
+                    {
+
+                     
+                            <DateEdit TValue="DateTime" Date="DateTime.Now" Min="DateTime.Now" DateChanged="@(v => ((CellEditContext)context).CellValue = v)"></DateEdit>
+                           
+                    }
+                    else
+                    {
+                       
+                        <DateEdit TValue="DateTime" Min="DateTime.Now" Date="@((DateTime)(((CellEditContext)context).CellValue))" DateChanged="@(v => ((CellEditContext)context).CellValue = v)" />
+                           
+                    }
+
+
+                </EditTemplate>
+
+            </DataGridDateColumn>
+               <DataGridSelectColumn TItem="ProjectModel" Field="@nameof(ProjectModel.AssignedCompanyID)" Caption="Company Assigned" Editable="true" CellsEditableOnNewCommand="true" CellsEditableOnEditCommand="false" Width="220px">
+                <EditTemplate>
+                    <Select TValue="int?" SelectedValue="@((int?)(((CellEditContext)context ).CellValue))" SelectedValueChanged="@((v) => ((CellEditContext)context).CellValue = v)">
+                        <ChildContent>
+                            if(companies != null)
+                            {
+                                @foreach (var comp in companies)
+                                {
+                                    <SelectItem Value="comp.CompanyID">@comp.CompanyName</SelectItem>
+                                }
+                            }
+
+                        </ChildContent>
+
+                    </Select>
+                </EditTemplate>
+                    <DisplayTemplate>
+                    @{
+                        var companyID = (context as ProjectModel).AssignedCompanyID;
+                        if (companies != null)
+                        {
+                            var companyRecord = companies.Where(x => x.CompanyID == companyID).FirstOrDefault();
+                            if(companyRecord != null )
+                            {
+                                @($"{companyRecord.CompanyName}")
+                            }
+                            else
+                            {
+                                @($"Not Assigned")
+                            }
+                        }
+                    }
+                </DisplayTemplate>
+            </DataGridSelectColumn>
+             <DataGridColumn TItem="ProjectModel" Editable="false" >
+                 <DisplayTemplate>
+                     <Button Color="Color.Link" Clicked="@(() => ShowAssignUsersModal(context))">Assign Project Users</Button>
+                 </DisplayTemplate>
+             </DataGridColumn>
+               <DataGridColumn TItem="ProjectModel" Editable="false" >
+                 <DisplayTemplate>
+                     <Button Color="Color.Link" Clicked="@(() => navManager.NavigateTo($"/Tickets/{context.ProjectID}"))">View Tickets</Button>
+                     
+                 </DisplayTemplate>
+             </DataGridColumn>
+                </DataGridColumns>
+                <EmptyTemplate>
+                    <div class="box">
+                        No Assigned Projects.
+                    </div>
+                </EmptyTemplate>
+            </DataGrid>  
+        </CardText>
+    </CardBody>
+}
+else
+{
+    <p>Loading Assigned Projects...</p>
+}
+
+
+    <Modal @ref="modalRef">
+    <ModalContent Centered="true">
+        <ModalHeader>
+            <ModalTitle>@selectedProject.ProjectTitle -  Project Users</ModalTitle>
+            <CloseButton />
+        </ModalHeader>
+        <ModalBody>
+             <Field>                  
+                <FieldLabel Style="margin-right:5px">Project Users</FieldLabel> <Button Color="Color.Link" Clicked=@(() => toogleAddEditUsers = !toogleAddEditUsers )>Add/Edit Users</Button>
+                  <div class="row">
+                                            <div class="col-sm-12">
+                                                 @if(selectedProject.ProjectAssignedUser != null)
+                                        {
+                                         @foreach(var user in selectedProject.ProjectAssignedUser)
+                                            {
+                                                 
+                                                <Badge Color="Color.Secondary" Margin="Blazorise.Margin.Is1" CloseClicked="@(()=> RemoveUserAssignment(selectedProject, user) )">@user.FirstName</Badge>
+                                                    
+                                                    if(!selectedProject.ProjectAssignedUser.Any())
+                                                    {
+                                                        <p class="text small ml-2">No Users Added</p>
+                                                    }
+
+                                                   
+                                                }
+                                           }
+                                        else
+                                        {
+                                            <p class="text small ml-2">No Users Added</p>
+                                        }
+                                            </div>
+                                        </div>
+            </Field>
+             @if(toogleAddEditUsers)
+                                        {
+                                            <Addons>
+                                                <Addon AddonType="AddonType.Body">
+                                                    <Select TValue="string" SelectedValue="@selectedUserToAdd" SelectedValueChanged="@OnSelectedValueChanged">
+                                                    <SelectItem Value="@(string.Empty)">Select User</SelectItem>
+                                                    @foreach(var user in availableCompanyUsers)
+                                                    {
+                                                        <SelectItem Value="@(user.Id)">@user.FirstName  @user.LastName</SelectItem>
+                                                    }
+                                                    </Select>
+                                                </Addon>
+                                                <Addon AddonType="AddonType.End">
+                                                    <Button Color="Color.Secondary" Clicked="@(()=> AssignUser(selectedProject))" Disabled=@(availableCompanyUsers.Count() < 1 ? true : false)>Assign User</Button>
+                                                </Addon>
+                                            </Addons>
+                                        }
+        </ModalBody>
+        <ModalFooter>
+            <Button Color="Color.Secondary" Clicked="@HideModal">Close</Button>
+        </ModalFooter>
+    </ModalContent>
+</Modal> 
+
+   
+
+
+
+@code
+{
+
+    private List<ProjectModel> availableProjects { get; set; }
+    private List<ProjectModel> assignedProjects { get; set; }
+    private List<ProjectModel> allProjects { get; set; }
+
+    private ProjectModel selectedProject { get; set; } = new ProjectModel();
+    private List<UserInfo> availableCompanyUsers { get; set; } = new List<UserInfo>();
+    private List<CompanyModel> companies { get; set; }
+
+
+    private bool toogleAddEditUsers { get; set; } = false;
+    private string selectedUserToAdd { get; set; } 
+    protected override async Task OnInitializedAsync()
+    {
+
+        await RefreshProjects();
+
+    }
+
+    async Task RefreshProjects()
+    {
+        selectedProject = new ProjectModel();
+        availableCompanyUsers = new List<UserInfo>();
+
+        companies = await _authorizeAPI.GetAllCompanies();
+
+        allProjects = await _authorizeAPI.GetAllProjects();
+
+        assignedProjects = new List<ProjectModel>();
+        availableProjects = new List<ProjectModel>();
+
+        //Split projects into two groups (Available and Assigned)
+        foreach (var project in allProjects)
+        {
+            if(project.AssignedCompanyID == null)
+            {
+                availableProjects.Add(project);
+            }
+            else
+            {
+                assignedProjects.Add(project);
+            }
+        }
+    }
+
+    private async Task SelectedRowChanged(ProjectModel args)
+    {
+        selectedProject = args;
+    }
+
+    private async Task OnRowInserted(SavedRowItem<ProjectModel, Dictionary<string, object>> e)
+    {
+
+        var checkDate = (DateTime)e.Values["ProjectDueDate"];
+        if(checkDate == DateTime.MinValue)
+        {
+            checkDate = DateTime.Now.Date;
+        }
+
+        var newProject = new ProjectModel() { ProjectTitle = (string)e.Values["ProjectTitle"], ProjectOverview = (string)e.Values["ProjectOverview"], ProjectDueDate = checkDate, AssignedCompanyID = (int?)e.Values["AssignedCompanyID"] };
+
+        //Add Project To DB
+        await _authorizeAPI.AddProject(newProject);
+
+
+        await RefreshProjects();
+
+        selectedProject = allProjects.Where(x => x.ProjectTitle == newProject.ProjectTitle).First();
+
+    }
+    void OnSelectedValueChanged(string userID )
+    {
+        selectedUserToAdd = userID;
+    }
+
+    private async Task AssignUser(ProjectModel project)
+    {
+
+        selectedProject = allProjects.Where(c => c.ProjectID == project.ProjectID).FirstOrDefault();
+
+        UserInfo selectedUser = availableCompanyUsers.Where(x => x.Id == selectedUserToAdd).First();
+
+
+        //var company = companies.Where(x => x.CompanyID == selectedProject.AssignedCompanyID).First();
+
+        if(selectedProject.ProjectAssignedUser == null)
+        {
+            selectedProject.ProjectAssignedUser = new List<UserInfo>() { selectedUser };
+
+        }
+        else
+        {
+            selectedProject.ProjectAssignedUser.Add(selectedUser); 
+        }
+        availableCompanyUsers.Remove(selectedUser);
+
+        //Assign User to Project (DB)
+        await _authorizeAPI.AddProjectUser(selectedProject, selectedUser);
+
+
+        selectedUserToAdd = string.Empty;
+
+
+    }
+
+    private async Task RemoveUserAssignment(ProjectModel project, UserInfo user)
+    {
+        selectedProject = allProjects.Where(c => c.ProjectID == project.ProjectID).FirstOrDefault();
+        selectedProject.ProjectAssignedUser.RemoveAll(x => x.Id == user.Id);
+
+        availableCompanyUsers.Add(user);
+
+        //Delete Project User FROM DB
+        await _authorizeAPI.DeleteProjectUser(selectedProject, user);
+    }
+
+
+    private async Task OnRowUpdated(SavedRowItem<ProjectModel, Dictionary<string, object>> e)
+    {
+        var updatedProjectID = allProjects.Where(x => x.ProjectTitle == (string)e.Values["ProjectTitle"]).First().ProjectID;
+
+        var updatedProject = new ProjectModel() { ProjectID =  updatedProjectID, ProjectTitle = (string)e.Values["ProjectTitle"], ProjectOverview = (string)e.Values["ProjectOverview"], ProjectDueDate = (DateTime)e.Values["ProjectDueDate"], AssignedCompanyID = (int?)e.Values["AssignedCompanyID"] };
+        // Update project in DB
+        await _authorizeAPI.EditProject(updatedProject);
+
+         await RefreshProjects();
+
+        selectedProject = allProjects.Where(x => x.ProjectID == updatedProject.ProjectID).First();
+
+    }
+     private async Task RowRemoved(ProjectModel project)
+    {
+        //Delete Company from DB
+        await _authorizeAPI.DeleteProject(project);
+
+         await RefreshProjects();
+        
+    }
+
+    // reference to the modal component
+    private Modal modalRef;
+    private Task ShowAssignUsersModal(ProjectModel project)
+    {
+        selectedProject = project;
+        availableCompanyUsers = new List<UserInfo>();
+        
+        
+        var companyUsers = companies.Where(x => x.CompanyID == selectedProject.AssignedCompanyID).First().CompanyUserID;
+
+
+        if(companyUsers != null)
+        {
+            foreach(var user in companyUsers)
+            {
+                availableCompanyUsers.Add(user);    
+            }
+
+            if(selectedProject.ProjectAssignedUser != null)
+            {
+                foreach(var user in selectedProject.ProjectAssignedUser)
+                {
+                    UserInfo selectedUser = availableCompanyUsers.Where(x => x.Id == user.Id).First();
+                    availableCompanyUsers.Remove(selectedUser);
+                }
+            }
+        }
+      
+
+        return modalRef.Show();
+    }
+    private Task HideModal()
+    {
+        RefreshProjects();
+        return modalRef.Hide();
+    }
+
+}
