@@ -195,7 +195,10 @@ else
              </DataGridColumn>
                <DataGridColumn TItem="ProjectModel" Editable="false" >
                  <DisplayTemplate>
-                     <Button Color="Color.Link" Clicked="@(() => navManager.NavigateTo($"/Tickets/{context.ProjectID}"))">View Tickets</Button>
+                     <Tooltip Text="@(context.ProjectAssignedUser == null ? "Assign Users To View/Add Tickets" : "" )" >
+                         <Button Color="Color.Link" Disabled="@(context.ProjectAssignedUser == null ? true : false )" Clicked="@(() => navManager.NavigateTo($"/Tickets/{context.ProjectID}"))">View Tickets</Button>
+                     </Tooltip>
+                     
                      
                  </DisplayTemplate>
              </DataGridColumn>

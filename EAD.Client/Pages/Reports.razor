@@ -1,0 +1,222 @@
+﻿@page "/Reports"
+@attribute [Authorize]
+@inject IAuthorizeApi _authorizeAPI
+@using Blazorise.Charts
+
+<Row>
+    <Column ColumnSize="ColumnSize.Is12">
+          @if(allProjects != null)
+                                                    {
+                                                        @if(selectedProject != null)
+                                                        {
+                                                            <Select TValue="int" SelectedValue="@selectedProject.ProjectID" SelectedValueChanged="@OnSelectedValueChanged">
+                                                            @foreach(var project in allProjects)
+                                                            {
+                                                                <SelectItem Value="@(project.ProjectID)">@project.ProjectTitle</SelectItem>
+                                                            }
+                                                            </Select>
+                                                        }
+                                                        
+                                                    }
+    </Column>
+   
+</Row>
+<Row>
+    <Column ColumnSize="ColumnSize.IsHalf.OnWidescreen">
+        <Card Margin="Margin.Is4.OnY">
+            <CardHeader>
+                <h5 class="card-title"><strong>Projects Progress</strong> </h5>
+             
+            </CardHeader>
+   
+            
+
+
+            <CardBody>
+                
+                   
+                    <Chart @ref="pieChart" Type="ChartType.Pie" TItem="double"   />
+                    @if(!allTickets.Where(x=>x.AssignedProjectID == selectedProject.ProjectID).Any())
+                    {
+                        <p>No tickets assigned for the selected project</p>
+                    }
+                
+                    
+
+                
+                           
+            </CardBody>
+        </Card>
+    </Column>
+    <Column ColumnSize="ColumnSize.IsHalf.OnWidescreen">
+        <Card Margin="Margin.Is4.OnY">
+            <CardHeader>
+                <h5 class="card-title"><strong>User Productivity (Tasks Completd) </strong> </h5>
+            </CardHeader>
+           
+          
+            <CardBody>
+                  <Chart @ref="barChart" Type="ChartType.Bar" TItem="double"   />
+            </CardBody>
+        </Card>
+    </Column>
+</Row>
+
+
+
+
+
+
+@code{
+
+    private List<CompanyModel> allCompanies { get; set; } = new List<CompanyModel>();
+    private List<ProjectModel> allProjects { get; set; } = new List<ProjectModel>();
+    private List<UserInfo> allUsers { get; set; } = new List<UserInfo>();
+    private List<TicketModel> allTickets { get; set; } = new List<TicketModel>();
+
+    private ProjectModel selectedProject { get; set; } 
+
+    protected override async Task OnInitializedAsync()
+    {
+        allCompanies = await _authorizeAPI.GetAllCompanies();
+        allProjects = await _authorizeAPI.GetAllProjects();
+        allTickets = await _authorizeAPI.GetAllTickets();
+        allUsers = await _authorizeAPI.GetAllUsers();
+        if(selectedProject == null)
+        {
+            selectedProject = allProjects.First();
+        }
+
+        await HandleRedrawPie();
+
+
+
+
+
+    }
+
+
+    async Task OnSelectedValueChanged(int projectID )
+    {
+        selectedProject = allProjects.Where(x => x.ProjectID == projectID).FirstOrDefault();
+
+        if(allTickets.Where(x=>x.AssignedProjectID == selectedProject.ProjectID).Any())
+        {
+            await HandleRedrawPie();
+        }
+        else
+        {
+            await pieChart.Clear();
+            await barChart.Clear();
+        }
+
+    }
+
+    
+    Chart<double> pieChart;
+    Chart<double> barChart;
+
+
+    async Task HandleRedrawPie()
+    {
+
+
+
+        if(selectedProject != null)
+        {
+
+            await pieChart.Clear();
+            await pieChart.AddLabelsDatasetsAndUpdate( Labels, GetPieChartDataset() );
+
+            var projectTickets = allTickets.Where(x => x.AssignedProjectID == selectedProject.ProjectID).ToList();
+            if(allUsers != null)
+            {
+              
+                barLabels = selectedProject.ProjectAssignedUser.Select(i => i.FirstName.ToString()).ToArray();
+
+                await barChart.Clear();
+                var axe = new Axis() { Ticks = new AxisTicks() { BeginAtZero = true } };
+                await barChart.SetOptions(new ChartOptions(){ Scales = new Scales() { YAxes = new List<Axis>() { axe } } });
+                await barChart.AddLabelsDatasetsAndUpdate( barLabels, GetBarChartDataset() );
+            }
+
+        }
+
+      
+
+
+
+
+
+    }
+
+    PieChartDataset<double> GetPieChartDataset()
+    {
+        return new()
+            {
+                Label = $"# of randoms",
+                Data = GetPieData(),
+                BackgroundColor = backgroundColors,
+                BorderColor = borderColors,
+                BorderWidth = 1
+            };
+    }
+
+    BarChartDataset<double> GetBarChartDataset()
+    {
+        string[] colors = new string[allUsers.Count];
+        int i = 0;
+        foreach (var user in selectedProject.ProjectAssignedUser)
+        {
+            colors[i++] = ChartColor.FromHtmlColorCode("#4CAF50");
+        }
+        return new()
+            {
+                Label = "Completed Tasks",
+                Data = GetBarData(),
+                BackgroundColor = colors,
+                BorderColor = colors,
+                BorderWidth = 1
+            };
+    }
+
+    string[] Labels = (string[]) Enum.GetNames(typeof(TicketStatuses));
+
+    List<string> backgroundColors = new List<string> { ChartColor.FromHtmlColorCode( "#5c6b7f" ), ChartColor.FromHtmlColorCode( "#0288D1" ), ChartColor.FromHtmlColorCode( "#FFEB3B" ), ChartColor.FromHtmlColorCode( "#4CAF50" ) };
+    List<string> borderColors = new List<string> { ChartColor.FromHtmlColorCode( "#5c6b7f" ), ChartColor.FromHtmlColorCode( "#0288D1" ), ChartColor.FromHtmlColorCode( "#FFEB3B" ), ChartColor.FromHtmlColorCode( "#4CAF50" ) };
+
+    List<double> GetPieData()
+    {
+        var projectTickets = allTickets.Where(x => x.AssignedProjectID == selectedProject.ProjectID).ToList();
+        int total = projectTickets.Any() ? projectTickets.Count() : 0;
+        if (total == 0)
+        {
+            return new List<double> { 0,0,0,0 };
+        }
+        else
+        {
+            double unassignedTickets = projectTickets.Where(x => x.Status == TicketStatuses.Unassigned).Any()  ? projectTickets.Where(x => x.Status == TicketStatuses.Unassigned).Count() : 0;
+            double todoTickets = projectTickets.Where(x => x.Status == TicketStatuses.Todo).Any()  ? projectTickets.Where(x => x.Status == TicketStatuses.Todo).Count() : 0;
+            double startedTickets = projectTickets.Where(x => x.Status == TicketStatuses.Started).Any()  ? projectTickets.Where(x => x.Status == TicketStatuses.Started).Count() : 0;
+            double completdTickets = projectTickets.Where(x => x.Status == TicketStatuses.Completed).Any()  ? projectTickets.Where(x => x.Status == TicketStatuses.Completed).Count() : 0;
+            return new List<double> { unassignedTickets/total * 100, todoTickets/total * 100, startedTickets/total * 100, completdTickets/total * 100 };
+        }
+    }
+
+    string[] barLabels;
+    List<double> GetBarData()
+    {
+        List<double> completedUserTickets = new List<double>();
+        foreach(var user in selectedProject.ProjectAssignedUser)
+        {
+            double total = allTickets.Where(x => x.AssignedUserID == new Guid(user.Id)).Where(x => x.Status == TicketStatuses.Completed).Any() ? allTickets.Where(x => x.AssignedUserID == new Guid(user.Id)).Where(x => x.Status == TicketStatuses.Completed).Count() : 0;
+            completedUserTickets.Add(total);
+        }
+        return completedUserTickets;
+        
+    }
+}
+
+
+
+    

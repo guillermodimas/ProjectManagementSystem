@@ -1,15 +1,100 @@
 ﻿@page "/"
 @attribute [Authorize]
+@inject IAuthorizeApi _authorizeAPI
+
 
 <PageTitle>Index</PageTitle>
 
 <AuthorizeView>
     <Authorized>
-      
 
-        <p>Welcome to your new app.</p>
+<div class="container">
+          <div class="row">
+                            <div class="col-lg-4">
+                                <div class="card text-center mb-3 d-flex align-items-stretch">
+                                    <div class="card-header d-flex flex-column">
+                                        <h5 class="card-title"><strong>Total Companies</strong></h5>
+                                    </div>
 
-      
+                                    <div class="card-body">
+                                        <p class="card-text"><h1>@(allCompanies.Any() ? allCompanies.Count() : "0")</h1></p>
+                                    </div>
+                                </div>
+
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card text-center mb-3 d-flex align-items-stretch">
+                                    <div class="card-header d-flex flex-column">
+                                        <h5 class="card-title"><strong>Total Projects</strong> </h5>
+                                        
+                                    </div>
+                                    <div class="card-body">
+                                   
+                                                 <p class="card-text"><h1>@(allProjects.Any() ? allProjects.Count() : "0")</h1></p>
+                                    
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="col-lg-4">
+                                <div class="card text-center mb-3 d-flex align-items-stretch">
+                                    <div class="card-header d-flex flex-column">
+                                        <h5 class="card-title"><strong>Total Unassigned Projects</strong> </h5>
+                                        
+                                    </div>
+                                    <div class="card-body ">
+                                   
+                                                <p class="card-text"><h1>@(allProjects.Where(x => x.AssignedCompanyID == null).Any() ? allProjects.Where(x => x.AssignedCompanyID == null).Count() : "0")</h1></p>
+                                    
+                                    </div>
+                                </div>
+                            </div>
+                          
+                        </div>
+                        <div class="row">
+                              <div class="col-lg-4">
+                                <div class="card text-center mb-3 d-flex align-items-stretch">
+                                    <div class="card-header d-flex flex-column">
+                                        <h5 class="card-title"><strong>Total Users</strong> </h5>
+                                        
+                                    </div>
+                                    <div class="card-body ">
+                                   
+                                                <p class="card-text"><h1>@(allUsers.Any() ? allUsers.Count() : "0")</h1></p>
+                                    
+                                    </div>
+                                </div>
+                            </div>
+                               <div class="col-lg-4">
+                                <div class="card text-center mb-3 d-flex align-items-stretch">
+                                    <div class="card-header d-flex flex-column">
+                                        <h5 class="card-title"><strong>Total Tickets</strong> </h5>
+                                        
+                                    </div>
+                                    <div class="card-body ">
+                                   
+                                                <p class="card-text"><h1>@(allTickets.Any() ? allTickets.Count() : "0")</h1></p>
+                                    
+                                    </div>
+                                </div>
+                            </div>
+                              <div class="col-lg-4">
+                                <div class="card text-center mb-3 d-flex align-items-stretch">
+                                    <div class="card-header d-flex flex-column">
+                                        <h5 class="card-title"><strong>Tickets Completed</strong> </h5>
+                                        
+                                    </div>
+                                    <div class="card-body ">
+                                   
+                                                <p class="card-text"><h1>@(allTickets.Where(x => x.Status == TicketStatuses.Completed).Any() ? allTickets.Where(x => x.Status == TicketStatuses.Completed).Count() : "0")</h1></p>
+                                    
+                                    </div>
+                                </div>
+                            </div>
+
+                        </div>
+</div>
+
+
     </Authorized>
     <Authorizing>
         <h1>Loading ...</h1>
@@ -17,3 +102,25 @@
 </AuthorizeView>
 
 
+@code
+{
+
+    
+    private List<CompanyModel> allCompanies { get; set; } = new List<CompanyModel>();
+    
+    private List<ProjectModel> allProjects { get; set; } = new List<ProjectModel>();
+    
+    private List<UserInfo> allUsers { get; set; } = new List<UserInfo>();
+    
+    private List<TicketModel> allTickets { get; set; } = new List<TicketModel>();
+    
+    protected override async Task OnInitializedAsync()
+    {
+        allCompanies = await _authorizeAPI.GetAllCompanies();
+        allProjects = await _authorizeAPI.GetAllProjects();
+        allUsers = await _authorizeAPI.GetAllUsers();
+        allTickets = await _authorizeAPI.GetAllTickets();
+    }
+
+        
+}

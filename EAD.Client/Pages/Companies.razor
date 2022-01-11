@@ -63,7 +63,7 @@
                                          @foreach(var user in selectedCompany.CompanyUserID)
                                             {
                                                  allUsers.Remove(user);
-                                                <Badge Color="Color.Secondary" CloseClicked="@(()=> RemoveUserAssignment(selectedCompany, user) )" Margin="Blazorise.Margin.Is1" cli>@user.FirstName</Badge>
+                                                <Badge Color="Color.Secondary" CloseClicked="@(()=> RemoveUserAssignment(selectedCompany, user) )" Margin="Blazorise.Margin.Is1" cli>@user.FirstName @user.LastName</Badge>
                                                     
                                                     if(!selectedCompany.CompanyUserID.Any())
                                                     {
