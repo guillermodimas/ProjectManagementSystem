@@ -281,6 +281,8 @@ else
 
 @code
 {
+    [Parameter] 
+    public CompanyModel selectedCompany { get; set; }
 
     private List<ProjectModel> availableProjects { get; set; }
     private List<ProjectModel> assignedProjects { get; set; }
@@ -298,6 +300,10 @@ else
 
         await RefreshProjects();
 
+    }
+    protected override async Task OnParametersSetAsync()
+    {
+        await RefreshProjects();
     }
 
     async Task RefreshProjects()
@@ -321,7 +327,19 @@ else
             }
             else
             {
-                assignedProjects.Add(project);
+
+                if(selectedCompany != null)
+                {
+                    if(project.AssignedCompanyID == selectedCompany.CompanyID)
+                    {
+                         assignedProjects.Add(project);
+                    }
+                }
+                else
+                {
+                    assignedProjects.Add(project);
+                }
+
             }
         }
     }
